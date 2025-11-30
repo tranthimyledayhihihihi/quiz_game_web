@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using QUIZ_GAME_WEB.Data;
 using System.Threading.Tasks;
+using System; // 👈 ĐÃ THÊM: Cần thiết cho việc bắt lỗi Exception
 
 // Namespace đã được đặt về QUIZ_GAME_WEB.Controllers
 namespace QUIZ_GAME_WEB.Controllers
@@ -17,8 +18,10 @@ namespace QUIZ_GAME_WEB.Controllers
             _context = context;
         }
 
+        // ===============================================
+        // 1. KIỂM TRA TRẠNG THÁI API (Smoke Test)
+        // ===============================================
         // GET: api/Home
-        // Chức năng: Kiểm tra trạng thái hoạt động của API
         [HttpGet]
         public IActionResult GetStatus()
         {
@@ -30,40 +33,53 @@ namespace QUIZ_GAME_WEB.Controllers
             });
         }
 
+        // ===============================================
+        // 2. KIỂM TRA KẾT NỐI DATABASE (Health Check)
+        // ===============================================
         // GET: api/Home/HealthCheck
-        // Chức năng: Kiểm tra kết nối Database (Health Check quan trọng)
         [HttpGet("HealthCheck")]
         public async Task<IActionResult> DatabaseHealthCheck()
         {
             try
             {
-                // Logic nghiệp vụ: Cố gắng kết nối và thực hiện một truy vấn đơn giản
-                await _context.Database.OpenConnectionAsync();
-                await _context.Database.CloseConnectionAsync();
-
-                return Ok(new
+                // Tùy chọn 1: Dùng CanConnectAsync() - cách hiện đại và an toàn hơn.
+                // Tránh mở và đóng kết nối thủ công như OpenConnectionAsync/CloseConnectionAsync
+                if (await _context.Database.CanConnectAsync())
                 {
-                    DatabaseStatus = "OK",
-                    Message = "API và Database đều hoạt động."
-                });
-            }
-            catch (Exception ex)
-            {
-                // Trả về lỗi 500 nếu kết nối database thất bại
-                return StatusCode(500, new
+                    return Ok(new
+                    {
+                        DatabaseStatus = "OK",
+                        Message = "API và Database đều hoạt động."
+                    });
+                }
+
+                // Nếu CanConnectAsync trả về false
+                return StatusCode(503, new // 503 Service Unavailable
                 {
                     DatabaseStatus = "Error",
-                    Message = "Không thể kết nối đến database.",
+                    Message = "Database không phản hồi hoặc không khả dụng."
+                });
+            }
+            catch (Exception ex) // Đã sửa lỗi thiếu 'using System;'
+            {
+                // Trả về lỗi 500 nếu có exception khi cố gắng kết nối
+                return StatusCode(500, new
+                {
+                    DatabaseStatus = "Fatal Error",
+                    Message = "Lỗi nghiêm trọng khi kiểm tra kết nối database.",
                     Detail = ex.Message
                 });
             }
         }
 
+        // ===============================================
+        // 3. ENDPOINT MẶC ĐỊNH CHO ROOT PATH
+        // ===============================================
         // GET: /
-        // Endpoint mặc định cho Root path (thường được cấu hình trong Program.cs)
         [HttpGet("/")]
         public IActionResult GetRoot()
         {
+            // Trả về kết quả của GetStatus
             return RedirectToAction(nameof(GetStatus));
         }
     }

@@ -2,6 +2,7 @@
 using QUIZ_GAME_WEB.Models.CoreEntities;
 using QUIZ_GAME_WEB.Models.QuizModels;
 using QUIZ_GAME_WEB.Models.ResultsModels;
+using QUIZ_GAME_WEB.Models.Social_RankingModels;
 using QUIZ_GAME_WEB.Models.SocialRankingModels;
 
 namespace QUIZ_GAME_WEB.Data
@@ -11,7 +12,7 @@ namespace QUIZ_GAME_WEB.Data
         public QuizGameContext(DbContextOptions<QuizGameContext> options) : base(options) { }
 
         // === 1. KHAI BÁO CÁC DbSet (Entities) ===
-        // Sử dụng tên số nhiều (Admins, NguoiDungs, etc.) là quy ước chuẩn trong C#
+        // ... (CORE ENTITIES và QUIZ ENTITIES giữ nguyên)
 
         // CORE ENTITIES
         public DbSet<Admin> Admins { get; set; } = null!;
@@ -42,7 +43,7 @@ namespace QUIZ_GAME_WEB.Data
         public DbSet<ThuongNgay> ThuongNgays { get; set; } = null!;
         public DbSet<BXH> BXHs { get; set; } = null!;
         public DbSet<NguoiDungOnline> NguoiDungOnlines { get; set; } = null!;
-
+        public DbSet<Comment> Comments { get; set; } = null!; // 👈 ĐÃ BỔ SUNG
 
         // === 2. CẤU HÌNH MỐI QUAN HỆ & TÊN BẢNG ===
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -57,6 +58,9 @@ namespace QUIZ_GAME_WEB.Data
             modelBuilder.Entity<VaiTroQuyen>().ToTable("VaiTro_Quyen");
             modelBuilder.Entity<CauHoi>().ToTable("CauHoi");
             modelBuilder.Entity<CaiDatNguoiDung>().ToTable("CaiDatNguoiDung");
+
+            modelBuilder.Entity<Comment>().ToTable("Comment"); // 👈 ĐÃ BỔ SUNG
+
             // ... (Áp dụng ToTable() cho tất cả các Entities khác theo tên SQL số ít)
 
             // 1. Cấu hình Khóa Phức Hợp (VaiTro_Quyen)
@@ -87,6 +91,12 @@ namespace QUIZ_GAME_WEB.Data
                 .HasOne(q => q.UserGui)
                 .WithMany(u => u.QuizChiaSeGui) // Giả sử đã định nghĩa ICollection này trong NguoiDung
                 .HasForeignKey(q => q.UserGuiID);
+
+            // 6. Cấu hình Quan hệ N:1 cho Comment
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.User)
+                .WithMany() // Giả định không cần truy cập ngược từ NguoiDung đến Comment
+                .HasForeignKey(c => c.UserID);
 
             // Tùy chọn: Gọi phương thức SeedData
             // modelBuilder.Seed();

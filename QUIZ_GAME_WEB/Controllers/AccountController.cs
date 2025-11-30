@@ -5,16 +5,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using QUIZ_GAME_WEB.Data;
 using QUIZ_GAME_WEB.Models.CoreEntities;
-using QUIZ_GAME_WEB.Models.InputModels;
-using QUIZ_GAME_WEB.Models.ViewModels; // Chứa LoginResponseModel
+using QUIZ_GAME_WEB.Models.InputModels; // Chứa DangNhapModel, DangKyModel, ChangePasswordModel
+using QUIZ_GAME_WEB.Models.ViewModels;
 using System;
+using System.Collections.Generic; // Cần cho List<Claim>
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq; // Cần cho FirstOrDefaultAsync, AnyAsync
 using System.Security.Claims;
-using System.Security.Cryptography; // Cần cho hashing
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-
-// Lưu ý: Các DTOs (DangNhapModel, DangKyModel, v.v.) được giả định đã có sẵn.
 
 [Route("api/[controller]")]
 [ApiController]
@@ -37,27 +37,24 @@ public class AccountController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        // 1. TRUY CẬP DB TRỰC TIẾP VÀ LẤY THÔNG TIN
-        var user = await _context.NguoiDung.FirstOrDefaultAsync(u => u.TenDangNhap == model.TenDangNhap);
+        // SỬA: NguoiDung -> NguoiDungs
+        var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.TenDangNhap == model.TenDangNhap);
 
         if (user == null || !user.TrangThai)
         {
             return Unauthorized(new { message = "Thông tin đăng nhập không hợp lệ hoặc tài khoản bị khóa." });
         }
 
-        // 2. XÁC THỰC MẬT KHẨU (LOGIC NGHIỆP VỤ)
-        // CHÚ Ý: Đã thay thế bằng VerifyPassword (hàm giả lập)
         if (!VerifyPassword(model.MatKhau, user.MatKhau))
         {
             return Unauthorized(new { message = "Mật khẩu không đúng." });
         }
 
-        // 3. PHÂN QUYỀN, TẠO TOKEN VÀ CẬP NHẬT DB
         string userRole = await GetUserRoleFromDatabase(user.UserID);
         string token = GenerateJwtToken(user, userRole);
 
         user.LanDangNhapCuoi = DateTime.Now;
-        await _context.SaveChangesAsync(); // Lưu LanDangNhapCuoi
+        await _context.SaveChangesAsync();
 
         return Ok(new LoginResponseModel
         {
@@ -75,24 +72,24 @@ public class AccountController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        // 1. KIỂM TRA TÊN ĐĂNG NHẬP/EMAIL ĐÃ TỒN TẠI
-        if (await _context.NguoiDung.AnyAsync(u => u.TenDangNhap == model.TenDangNhap || u.Email == model.Email))
+        // SỬA: NguoiDung -> NguoiDungs
+        if (await _context.NguoiDungs.AnyAsync(u => u.TenDangNhap == model.TenDangNhap || u.Email == model.Email))
         {
             return Conflict(new { message = "Tên đăng nhập hoặc Email đã được sử dụng." });
         }
 
-        // 2. TẠO USER MỚI (TRUY CẬP DB TRỰC TIẾP)
         var newUser = new NguoiDung
         {
             TenDangNhap = model.TenDangNhap,
-            MatKhau = HashPassword(model.MatKhau), // Hash mật khẩu
+            MatKhau = HashPassword(model.MatKhau),
             Email = model.Email,
             HoTen = model.HoTen,
             NgayDangKy = DateTime.Now,
-            TrangThai = true // Mặc định là active
+            TrangThai = true
         };
 
-        await _context.NguoiDung.AddAsync(newUser);
+        // SỬA: NguoiDung -> NguoiDungs
+        await _context.NguoiDungs.AddAsync(newUser);
         await _context.SaveChangesAsync();
 
         return StatusCode(201, new { message = "Đăng ký thành công." });
@@ -101,17 +98,18 @@ public class AccountController : ControllerBase
     // ===============================================
     // 🔑 API 3: ĐỔI MẬT KHẨU (CHANGE PASSWORD)
     // ===============================================
-    // Cần JWT Authorize để biết ai đang đổi mật khẩu
     [HttpPost("change-password")]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
     {
-        // Lấy UserID từ JWT Token (an toàn hơn là lấy từ Body)
+        if (!ModelState.IsValid) return BadRequest(ModelState); // Kiểm tra validation của Model
+
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim == null) return Unauthorized();
         int userId = int.Parse(userIdClaim.Value);
 
-        var user = await _context.NguoiDung.FindAsync(userId);
+        // SỬA: NguoiDung -> NguoiDungs
+        var user = await _context.NguoiDungs.FindAsync(userId);
         if (user == null) return NotFound("Người dùng không tồn tại.");
 
         if (!VerifyPassword(model.CurrentPassword, user.MatKhau))
@@ -121,7 +119,8 @@ public class AccountController : ControllerBase
 
         // Cập nhật mật khẩu mới
         user.MatKhau = HashPassword(model.NewPassword);
-        _context.NguoiDung.Update(user);
+        // SỬA: NguoiDung -> NguoiDungs
+        _context.NguoiDungs.Update(user);
         await _context.SaveChangesAsync();
 
         return Ok(new { Message = "Đổi mật khẩu thành công." });
@@ -146,9 +145,9 @@ public class AccountController : ControllerBase
 
     private async Task<string> GetUserRoleFromDatabase(int userId)
     {
-        // Logic truy vấn để xác định Vai trò (Admin/Player)
-        var role = await (from a in _context.Admin
-                          join r in _context.VaiTro on a.VaiTroID equals r.VaiTroID
+        // SỬA: Admin -> Admins, VaiTro -> VaiTros
+        var role = await (from a in _context.Admins
+                          join r in _context.VaiTros on a.VaiTroID equals r.VaiTroID
                           where a.UserID == userId
                           select r.TenVaiTro)
                           .FirstOrDefaultAsync();

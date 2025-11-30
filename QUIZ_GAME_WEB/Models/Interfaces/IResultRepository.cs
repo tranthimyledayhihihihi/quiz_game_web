@@ -16,6 +16,20 @@ namespace QUIZ_GAME_WEB.Models.Interfaces
         Task<IEnumerable<CauSai>> GetRecentWrongAnswersAsync(int userId, int limit = 10);
 
         // Logic Thống kê/Báo cáo
-        Task<IEnumerable<ThongKeNguoiDung>> GetUserDailyStatsAsync(int userId, DateTime startDate, DateTime endDate);
+        Task<IEnumerable<ThongKeNguoiDung>> GetUserDailyStatsAsync(int userId, DateTime? startDate, DateTime? endDate);
+        Task<IEnumerable<ThanhTuu>> GetUserAchievementsAsync(int userId);
+
+        // ----------------------------------------------------
+        // SỬA LỖI NẶNG NHẤT: Bổ sung kiểu trả về ThuongNgay?
+        // ----------------------------------------------------
+        /// <summary>
+        /// Lấy bản ghi thưởng hàng ngày theo UserID và ngày.
+        /// </summary>
+        Task<ThuongNgay?> GetDailyRewardByDateAsync(int userId, DateTime today); // 👈 ĐÃ SỬA KIỂU TRẢ VỀ
+
+        // Các hàm không phải async nên là void:
+        void AddDailyReward(ThuongNgay newReward);
+        void AddStreak(ChuoiNgay chuoiNgay);
+        void Update(ChuoiNgay streak);
     }
 }

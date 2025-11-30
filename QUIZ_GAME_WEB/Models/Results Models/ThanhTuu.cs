@@ -12,5 +12,7 @@ namespace QUIZ_GAME_WEB.Models.ResultsModels
         public string? MoTa { get; set; }
         public string? BieuTuong { get; set; }
         public string? DieuKien { get; set; }
+        public int NguoiDungID { get; internal set; }
+        public string AchievementCode { get; internal set; }
     }
 }

@@ -4,17 +4,28 @@ using QUIZ_GAME_WEB.Data;
 using QUIZ_GAME_WEB.Models.Interfaces;
 using QUIZ_GAME_WEB.Models.Social_RankingModels;
 using QUIZ_GAME_WEB.Models.SocialRankingModels;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 
 namespace QUIZ_GAME_WEB.Models.Implementations
 {
     public class SocialRepository : GenericRepository<BXH>, ISocialRepository
     {
-        public SocialRepository(QuizGameContext context) : base(context) { }
+        private readonly QuizGameContext _context;
 
+        public SocialRepository(QuizGameContext context) : base(context)
+        {
+            _context = context;
+        }
+
+        // ----------------------------------------------------
+        // 1. LẤY TOP BXH
+        // ----------------------------------------------------
         public async Task<IEnumerable<BXH>> GetTopRankingAsync(string type, int topCount)
         {
-            // Logic: Lấy Top BXH theo loại (Tuan/Thang)
-            IQueryable<BXH> query = _context.BXH;
+            IQueryable<BXH> query = _context.BXHs;
 
             if (type.Equals("Tuan", StringComparison.OrdinalIgnoreCase))
             {
@@ -24,41 +35,53 @@ namespace QUIZ_GAME_WEB.Models.Implementations
             {
                 query = query.OrderByDescending(b => b.DiemThang).ThenBy(b => b.HangThang);
             }
-            // Include User để hiển thị tên
-            return await query.Include(b => b.User).Take(topCount).ToListAsync();
+
+            // SỬA LỖI CS1061: Thay User bằng NguoiDung
+            return await query.Include(b => b.NguoiDung).Take(topCount).ToListAsync();
         }
 
+        // ----------------------------------------------------
+        // 2. LẤY ENTRY BXH CỦA USER
+        // ----------------------------------------------------
         public async Task<BXH?> GetUserRankingEntryAsync(int userId)
         {
-            return await _context.BXH.FirstOrDefaultAsync(b => b.UserID == userId);
+            return await _context.BXHs.FirstOrDefaultAsync(b => b.UserID == userId);
         }
 
+        // ----------------------------------------------------
+        // 3. CẬP NHẬT/THÊM TRẠNG THÁI ONLINE
+        // ----------------------------------------------------
         public async Task UpdateOrInsertOnlineStatusAsync(int userId, string status)
         {
-            // Logic: Cập nhật thời gian online cuối cùng
-            var onlineEntry = await _context.NguoiDungOnline.FirstOrDefaultAsync(o => o.UserID == userId);
+            var onlineEntry = await _context.NguoiDungOnlines.FirstOrDefaultAsync(o => o.UserID == userId);
+
             if (onlineEntry == null)
             {
-                await _context.NguoiDungOnline.AddAsync(new NguoiDungOnline { UserID = userId, TrangThai = status, ThoiGianCapNhat = DateTime.Now });
+                await _context.NguoiDungOnlines.AddAsync(new NguoiDungOnline { UserID = userId, TrangThai = status, ThoiGianCapNhat = DateTime.Now });
             }
             else
             {
                 onlineEntry.TrangThai = status;
                 onlineEntry.ThoiGianCapNhat = DateTime.Now;
-                _context.NguoiDungOnline.Update(onlineEntry);
+                _context.NguoiDungOnlines.Update(onlineEntry);
             }
         }
 
+        // ----------------------------------------------------
+        // 4. THÊM BÌNH LUẬN
+        // ----------------------------------------------------
         public async Task AddCommentAsync(Comment comment)
         {
-            await _context.Comment.AddAsync(comment); // Giả sử có DbSet<Comment>
+            await _context.Comments.AddAsync(comment);
         }
 
+        // ----------------------------------------------------
+        // 5. ĐẾM SỐ NGƯỜI DÙNG ONLINE
+        // ----------------------------------------------------
         public async Task<int> CountUsersOnlineAsync()
         {
-            // Giả sử "Online" được định nghĩa là trong 5 phút gần nhất
             var threshold = DateTime.Now.AddMinutes(-5);
-            return await _context.NguoiDungOnline.CountAsync(o => o.ThoiGianCapNhat >= threshold);
+            return await _context.NguoiDungOnlines.CountAsync(o => o.ThoiGianCapNhat >= threshold);
         }
     }
 }

@@ -2,9 +2,23 @@
 using Microsoft.EntityFrameworkCore;
 using QUIZ_GAME_WEB.Data;
 using QUIZ_GAME_WEB.Models.ResultsModels;
-using QUIZ_GAME_WEB.Models.CoreEntities; // NguoiDung
-using QUIZ_GAME_WEB.Models.SocialRankingModels; // NguoiDungOnline, ChuoiNgay
+using QUIZ_GAME_WEB.Models.CoreEntities;
+using QUIZ_GAME_WEB.Models.SocialRankingModels;
 using System.Linq;
+using System.Threading.Tasks; // 👈 ĐÃ THÊM
+using System; // 👈 ĐÃ THÊM
+using System.Collections.Generic; // 👈 ĐÃ THÊM
+
+// ĐỊNH NGHĨA VIEW MODEL GIẢ ĐỊNH CHO HIỆU SUẤT TỐT HƠN
+// Bạn cần tạo file này trong Models/ViewModels hoặc nơi phù hợp
+public class OnlineUserViewModel
+{
+    public int UserID { get; set; }
+    public string HoTen { get; set; }
+    public string TrangThai { get; set; }
+    public DateTime ThoiGianCapNhat { get; set; }
+}
+
 
 namespace QUIZ_GAME_WEB.Controllers.Social
 {
@@ -19,24 +33,35 @@ namespace QUIZ_GAME_WEB.Controllers.Social
             _context = context;
         }
 
+        // ===============================================
+        // 1. LẤY NGƯỜI DÙNG ONLINE
+        // ===============================================
         // GET: api/social/Activity/OnlineUsers
-        // Chức năng: Lấy danh sách người dùng đang online (Logic nghiệp vụ: Cập nhật trong 5 phút gần nhất)
+        // Đã thay đổi kiểu trả về sang ViewModel (hoặc bạn có thể tự định nghĩa DTO)
         [HttpGet("OnlineUsers")]
-        public async Task<ActionResult<IEnumerable<NguoiDungOnline>>> GetOnlineUsers()
+        public async Task<ActionResult<IEnumerable<OnlineUserViewModel>>> GetOnlineUsers()
         {
             var fiveMinutesAgo = DateTime.Now.AddMinutes(-5);
 
-            // Logic nghiệp vụ: Lấy người dùng online và include thông tin cơ bản của họ
+            // Sử dụng Projection để tối ưu hóa hiệu suất
             var onlineUsers = await _context.NguoiDungOnlines
                 .Where(u => u.TrangThai == "Online" && u.ThoiGianCapNhat >= fiveMinutesAgo)
-                .Include(u => u.NguoiDung)
+                .Select(u => new OnlineUserViewModel
+                {
+                    UserID = u.UserID,
+                    HoTen = u.NguoiDung.HoTen, // Giả định NguoiDung là Navigation Property
+                    TrangThai = u.TrangThai,
+                    ThoiGianCapNhat = u.ThoiGianCapNhat
+                })
                 .ToListAsync();
 
             return Ok(onlineUsers);
         }
 
+        // ===============================================
+        // 2. CẬP NHẬT TRẠNG THÁI HOẠT ĐỘNG
+        // ===============================================
         // POST: api/social/Activity/UpdateStatus/{userId}
-        // Chức năng: Cập nhật trạng thái và thời gian hoạt động của người dùng
         [HttpPost("UpdateStatus/{userId}")]
         public async Task<IActionResult> UpdateUserStatus(int userId, [FromQuery] string status = "Online")
         {
@@ -52,6 +77,7 @@ namespace QUIZ_GAME_WEB.Controllers.Social
                     TrangThai = status,
                     ThoiGianCapNhat = DateTime.Now
                 };
+                // Dùng Add/Update thay vì AddAsync/UpdateAsync vì không có hàm Async cho những hàm này của DbContext
                 _context.NguoiDungOnlines.Add(onlineRecord);
             }
             else
@@ -66,8 +92,10 @@ namespace QUIZ_GAME_WEB.Controllers.Social
             return NoContent();
         }
 
+        // ===============================================
+        // 3. CẬP NHẬT CHUỖI NGÀY CHƠI (STREAK)
+        // ===============================================
         // POST: api/social/Activity/UpdateStreak/{userId}
-        // Chức năng: Cập nhật chuỗi ngày chơi liên tiếp (Logic nghiệp vụ)
         [HttpPost("UpdateStreak/{userId}")]
         public async Task<IActionResult> UpdateUserStreak(int userId)
         {
@@ -97,7 +125,7 @@ namespace QUIZ_GAME_WEB.Controllers.Social
                 }
                 else
                 {
-                    // Bị đứt chuỗi
+                    // Bị đứt chuỗi (nghỉ 2 ngày trở lên)
                     chuoiNgay.SoNgayLienTiep = 1;
                     chuoiNgay.NgayCapNhatCuoi = today;
                     _context.ChuoiNgays.Update(chuoiNgay);
