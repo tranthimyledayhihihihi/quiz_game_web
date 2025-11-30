@@ -9,15 +9,20 @@ namespace QUIZ_GAME_WEB.Models.QuizModels
     {
         [Key]
         public int QuizTuyChinhID { get; set; }
+
         [Required]
         public int UserID { get; set; }
+
+        [Required]
         [MaxLength(100)]
-        public string TenQuiz { get; set; }
+        public string TenQuiz { get; set; } = null!;
+
         [MaxLength(255)]
-        public string MoTa { get; set; }
+        public string? MoTa { get; set; }
+
         public DateTime NgayTao { get; set; } = DateTime.Now;
 
         [ForeignKey("UserID")]
-        public virtual NguoiDung NguoiDung { get; set; }
+        public virtual NguoiDung NguoiDung { get; set; } = null!;
     }
 }

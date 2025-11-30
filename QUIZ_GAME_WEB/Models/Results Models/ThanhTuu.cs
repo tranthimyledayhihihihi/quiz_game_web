@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using QUIZ_GAME_WEB.Models.CoreEntities;
 
 namespace QUIZ_GAME_WEB.Models.ResultsModels
 {
@@ -6,13 +8,22 @@ namespace QUIZ_GAME_WEB.Models.ResultsModels
     {
         [Key]
         public int ThanhTuuID { get; set; }
+
         [MaxLength(100)]
-        // Sửa các dòng này
         public string? TenThanhTuu { get; set; }
+
         public string? MoTa { get; set; }
+
         public string? BieuTuong { get; set; }
+
         public string? DieuKien { get; set; }
-        public int NguoiDungID { get; internal set; }
-        public string AchievementCode { get; internal set; }
+
+        [Required]
+        public int NguoiDungID { get; set; }
+
+        public string AchievementCode { get; set; } = null!;
+
+        [ForeignKey("NguoiDungID")]
+        public virtual NguoiDung NguoiDung { get; set; } = null!;
     }
 }

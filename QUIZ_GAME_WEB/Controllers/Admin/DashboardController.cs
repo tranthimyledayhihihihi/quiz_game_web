@@ -68,34 +68,7 @@ namespace QUIZ_GAME_WEB.Controllers
         }
 
 
-        // POST: api/admin/Admin/PhanQuyen/{vaiTroId}
-        [HttpPost("PhanQuyen/{vaiTroId}")]
-        public async Task<IActionResult> UpdatePhanQuyen(int vaiTroId, [FromBody] PhanQuyenUpdateModel model)
-        {
-            if (!_context.VaiTros.Any(v => v.VaiTroID == vaiTroId))
-            {
-                return NotFound("Vai Trò không tồn tại.");
-            }
-
-            // --- LOGIC NGHIỆP VỤ: XÓA VÀ TẠO LẠI ---
-
-            // 1. Xóa tất cả quyền cũ
-            var currentPermissions = await _context.VaiTroQuyens
-                .Where(vq => vq.VaiTroID == vaiTroId)
-                .ToListAsync();
-
-            _context.VaiTroQuyens.RemoveRange(currentPermissions);
-
-            // 2. Thêm quyền mới
-            var newPermissions = model.QuyenIds
-                .Select(quyenId => new VaiTroQuyen { VaiTroID = vaiTroId, QuyenID = quyenId })
-                .ToList();
-
-            _context.VaiTroQuyens.AddRange(newPermissions);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Message = $"Đã cập nhật {newPermissions.Count} quyền cho Vai Trò ID: {vaiTroId}" });
-        }
+       
     }
 
     // DTO (Data Transfer Object) cho đầu vào cập nhật phân quyền

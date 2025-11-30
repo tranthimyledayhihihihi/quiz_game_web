@@ -1,4 +1,4 @@
-﻿using QUIZ_GAME_WEB.Models.Social_RankingModels; // Cần cho Entity Comment
+﻿using QUIZ_GAME_WEB.Models.SocialRankingModels; // Cần cho Entity Comment
 using QUIZ_GAME_WEB.Models.Interfaces; // Cần cho IGenericRepository (Giả định)
 using System.Collections.Generic;
 using System.Threading.Tasks;

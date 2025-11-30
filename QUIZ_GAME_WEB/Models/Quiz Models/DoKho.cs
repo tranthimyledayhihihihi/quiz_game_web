@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace QUIZ_GAME_WEB.Models.QuizModels
 {
@@ -6,11 +7,13 @@ namespace QUIZ_GAME_WEB.Models.QuizModels
     {
         [Key]
         public int DoKhoID { get; set; }
+
         [Required]
         [MaxLength(50)]
-        public string TenDoKho { get; set; }
+        public string TenDoKho { get; set; } = null!;
+
         public int DiemThuong { get; set; } = 0;
 
-        public virtual ICollection<CauHoi> CauHois { get; set; }
+        public virtual ICollection<CauHoi> CauHois { get; set; } = new HashSet<CauHoi>();
     }
 }

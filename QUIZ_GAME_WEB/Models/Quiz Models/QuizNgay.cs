@@ -8,10 +8,12 @@ namespace QUIZ_GAME_WEB.Models.QuizModels
     {
         [Key]
         public int QuizNgayID { get; set; }
+
         public DateTime Ngay { get; set; } = DateTime.Today;
+
         public int? CauHoiID { get; set; }
 
         [ForeignKey("CauHoiID")]
-        public virtual CauHoi CauHoi { get; set; }
+        public virtual CauHoi? CauHoi { get; set; }
     }
 }

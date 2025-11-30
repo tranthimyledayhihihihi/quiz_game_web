@@ -9,12 +9,15 @@ namespace QUIZ_GAME_WEB.Models.ResultsModels
     {
         [Key]
         public int ChuoiID { get; set; }
+
         [Required]
         public int UserID { get; set; }
+
         public int SoNgayLienTiep { get; set; } = 0;
+
         public DateTime NgayCapNhatCuoi { get; set; } = DateTime.Now;
 
         [ForeignKey("UserID")]
-        public virtual NguoiDung NguoiDung { get; set; }
+        public virtual NguoiDung NguoiDung { get; set; } = null!;
     }
 }

@@ -1,5 +1,5 @@
 ﻿// Models/Interfaces/ISocialRepository.cs
-using QUIZ_GAME_WEB.Models.Social_RankingModels;
+using QUIZ_GAME_WEB.Models.SocialRankingModels;
 using QUIZ_GAME_WEB.Models.SocialRankingModels;
 using System.Collections.Generic;
 using System.Threading.Tasks;

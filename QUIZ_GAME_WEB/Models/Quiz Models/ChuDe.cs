@@ -10,13 +10,13 @@ namespace QUIZ_GAME_WEB.Models.QuizModels
 
         [Required]
         [MaxLength(100)]
-        public string TenChuDe { get; set; }
+        public string TenChuDe { get; set; } = null!;
 
         [MaxLength(255)]
         public string? MoTa { get; set; }
 
         public bool TrangThai { get; set; } = true;
 
-        public virtual ICollection<CauHoi> CauHois { get; set; }
+        public virtual ICollection<CauHoi> CauHois { get; set; } = new HashSet<CauHoi>();
     }
 }

@@ -80,7 +80,6 @@ namespace QUIZ_GAME_WEB.Controllers.Quiz
                 Diem = diemThuong,
                 SoCauDung = isCorrect ? 1 : 0,
                 TongCauHoi = 1,
-                TrangThai = isCorrect ? "Đúng" : "Sai",
                 ThoiGian = DateTime.Now
             };
             _context.KetQuas.Add(ketQua);

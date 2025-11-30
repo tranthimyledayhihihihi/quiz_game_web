@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Data/QuizGameContext.cs
+using Microsoft.EntityFrameworkCore;
 using QUIZ_GAME_WEB.Models.CoreEntities;
 using QUIZ_GAME_WEB.Models.QuizModels;
 using QUIZ_GAME_WEB.Models.ResultsModels;
-using QUIZ_GAME_WEB.Models.Social_RankingModels;
 using QUIZ_GAME_WEB.Models.SocialRankingModels;
 
 namespace QUIZ_GAME_WEB.Data
@@ -11,21 +11,18 @@ namespace QUIZ_GAME_WEB.Data
     {
         public QuizGameContext(DbContextOptions<QuizGameContext> options) : base(options) { }
 
-        // === 1. KHAI BÁO CÁC DbSet (Entities) ===
-        // ... (CORE ENTITIES và QUIZ ENTITIES giữ nguyên)
-
-        // CORE ENTITIES
+        // === 1. DbSet Core Entities ===
+        public DbSet<SystemSetting> SystemSettings { get; set; } = null!;
         public DbSet<Admin> Admins { get; set; } = null!;
         public DbSet<NguoiDung> NguoiDungs { get; set; } = null!;
         public DbSet<VaiTro> VaiTros { get; set; } = null!;
         public DbSet<Quyen> Quyens { get; set; } = null!;
-        public DbSet<VaiTroQuyen> VaiTroQuyens { get; set; } = null!;
+        public DbSet<VaiTro_Quyen> VaiTroQuyens { get; set; } = null!;
         public DbSet<CaiDatNguoiDung> CaiDatNguoiDungs { get; set; } = null!;
         public DbSet<PhienDangNhap> PhienDangNhaps { get; set; } = null!;
-        public DbSet<ClientKey> ClientKeys { get; set; } = null!;
-        public DbSet<SystemSetting> SystemSettings { get; set; } = null!;
+        public DbSet<Comment> Comments { get; set; } = null!;
 
-        // QUIZ ENTITIES
+        // === 2. DbSet Quiz Entities ===
         public DbSet<CauHoi> CauHois { get; set; } = null!;
         public DbSet<ChuDe> ChuDes { get; set; } = null!;
         public DbSet<DoKho> DoKhos { get; set; } = null!;
@@ -34,7 +31,7 @@ namespace QUIZ_GAME_WEB.Data
         public DbSet<QuizNgay> QuizNgays { get; set; } = null!;
         public DbSet<QuizChiaSe> QuizChiaSes { get; set; } = null!;
 
-        // RESULTS & SOCIAL ENTITIES
+        // === 3. DbSet Results & Social Entities ===
         public DbSet<KetQua> KetQuas { get; set; } = null!;
         public DbSet<CauSai> CauSais { get; set; } = null!;
         public DbSet<ChuoiNgay> ChuoiNgays { get; set; } = null!;
@@ -43,63 +40,183 @@ namespace QUIZ_GAME_WEB.Data
         public DbSet<ThuongNgay> ThuongNgays { get; set; } = null!;
         public DbSet<BXH> BXHs { get; set; } = null!;
         public DbSet<NguoiDungOnline> NguoiDungOnlines { get; set; } = null!;
-        public DbSet<Comment> Comments { get; set; } = null!; // 👈 ĐÃ BỔ SUNG
+        public DbSet<ClientKey> ClientKeys { get; set; } = null!;
 
-        // === 2. CẤU HÌNH MỐI QUAN HỆ & TÊN BẢNG ===
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<QuizChiaSe>()
+    .HasOne(q => q.UserGui)
+    .WithMany(u => u.QuizChiaSesGui)
+    .HasForeignKey(q => q.UserGuiID)
+    .OnDelete(DeleteBehavior.Restrict); // tránh cascade loops
 
-            // Tắt tự động thêm "s" ở cuối tên bảng (Pluralization) và ánh xạ tên bảng
+            // 9. 1:N NguoiDung ↔ QuizChiaSe (Nhan)
+            modelBuilder.Entity<QuizChiaSe>()
+                .HasOne(q => q.UserNhan)
+                .WithMany(u => u.QuizChiaSesNhan)
+                .HasForeignKey(q => q.UserNhanID)
+                .OnDelete(DeleteBehavior.Restrict); // tránh cascade loops
+            // === 1. Mapping table names ===
             modelBuilder.Entity<Admin>().ToTable("Admin");
             modelBuilder.Entity<NguoiDung>().ToTable("NguoiDung");
             modelBuilder.Entity<VaiTro>().ToTable("VaiTro");
             modelBuilder.Entity<Quyen>().ToTable("Quyen");
-            modelBuilder.Entity<VaiTroQuyen>().ToTable("VaiTro_Quyen");
-            modelBuilder.Entity<CauHoi>().ToTable("CauHoi");
+            modelBuilder.Entity<VaiTro_Quyen>().ToTable("VaiTro_Quyen");
             modelBuilder.Entity<CaiDatNguoiDung>().ToTable("CaiDatNguoiDung");
+            modelBuilder.Entity<PhienDangNhap>().ToTable("PhienDangNhap");
+            modelBuilder.Entity<Comment>().ToTable("Comment");
+            modelBuilder.Entity<CauHoi>().ToTable("CauHoi");
+            modelBuilder.Entity<ChuDe>().ToTable("ChuDe");
+            modelBuilder.Entity<DoKho>().ToTable("DoKho");
+            modelBuilder.Entity<TroGiup>().ToTable("TroGiup");
+            modelBuilder.Entity<QuizTuyChinh>().ToTable("QuizTuyChinh");
+            modelBuilder.Entity<QuizNgay>().ToTable("QuizNgay");
+            modelBuilder.Entity<QuizChiaSe>().ToTable("QuizChiaSe");
+            modelBuilder.Entity<KetQua>().ToTable("KetQua");
+            modelBuilder.Entity<CauSai>().ToTable("CauSai");
+            modelBuilder.Entity<ChuoiNgay>().ToTable("ChuoiNgay");
+            modelBuilder.Entity<ThanhTuu>().ToTable("ThanhTuu");
+            modelBuilder.Entity<ThongKeNguoiDung>().ToTable("ThongKeNguoiDung");
+            modelBuilder.Entity<ThuongNgay>().ToTable("ThuongNgay");
+            modelBuilder.Entity<BXH>().ToTable("BXH");
+            modelBuilder.Entity<NguoiDungOnline>().ToTable("NguoiDungOnline");
 
-            modelBuilder.Entity<Comment>().ToTable("Comment"); // 👈 ĐÃ BỔ SUNG
-
-            // ... (Áp dụng ToTable() cho tất cả các Entities khác theo tên SQL số ít)
-
-            // 1. Cấu hình Khóa Phức Hợp (VaiTro_Quyen)
-            modelBuilder.Entity<VaiTroQuyen>()
+            // === 2. N:N VaiTro_Quyen ===
+            modelBuilder.Entity<VaiTro_Quyen>()
                 .HasKey(vq => new { vq.VaiTroID, vq.QuyenID });
+            modelBuilder.Entity<VaiTro_Quyen>()
+                .HasOne(vq => vq.VaiTro)
+                .WithMany(v => v.VaiTro_Quyens)
+                .HasForeignKey(vq => vq.VaiTroID);
+            modelBuilder.Entity<VaiTro_Quyen>()
+                .HasOne(vq => vq.Quyen)
+                .WithMany(q => q.VaiTro_Quyens)
+                .HasForeignKey(vq => vq.QuyenID);
 
-            // 2. Mối quan hệ 1:1 (NguoiDung và Admin)
+            // === 3. 1:1 Admin ↔ NguoiDung ===
             modelBuilder.Entity<Admin>()
-                .HasOne(a => a.User) // Admin có 1 User
-                .WithOne(u => u.AdminInfo) // User có 1 AdminInfo
+                .HasOne(a => a.User)
+                .WithOne(u => u.Admin)
                 .HasForeignKey<Admin>(a => a.UserID);
 
-            // 3. Mối quan hệ 1:1 (NguoiDung và CaiDatNguoiDung)
+            // === 4. 1:1 CaiDatNguoiDung ↔ NguoiDung ===
             modelBuilder.Entity<CaiDatNguoiDung>()
                 .HasOne(c => c.NguoiDung)
                 .WithOne(u => u.CaiDat)
                 .HasForeignKey<CaiDatNguoiDung>(c => c.UserID);
 
-            // 4. Cấu hình Index Unique (TenDangNhap, Email)
-            modelBuilder.Entity<NguoiDung>(entity =>
-            {
-                entity.HasIndex(n => n.TenDangNhap).IsUnique();
-                entity.HasIndex(n => n.Email).IsUnique();
-            });
-
-            // 5. Cấu hình Quan hệ N:1 cho các FK có thể không theo quy ước
-            modelBuilder.Entity<QuizChiaSe>()
-                .HasOne(q => q.UserGui)
-                .WithMany(u => u.QuizChiaSeGui) // Giả sử đã định nghĩa ICollection này trong NguoiDung
-                .HasForeignKey(q => q.UserGuiID);
-
-            // 6. Cấu hình Quan hệ N:1 cho Comment
+            // === 5. 1:N NguoiDung ↔ Comment ===
             modelBuilder.Entity<Comment>()
                 .HasOne(c => c.User)
-                .WithMany() // Giả định không cần truy cập ngược từ NguoiDung đến Comment
+                .WithMany(u => u.Comments)
                 .HasForeignKey(c => c.UserID);
 
-            // Tùy chọn: Gọi phương thức SeedData
-            // modelBuilder.Seed();
+            // === 6. 1:N NguoiDung ↔ PhienDangNhap ===
+            modelBuilder.Entity<PhienDangNhap>()
+                .HasOne(p => p.NguoiDung)
+                .WithMany(u => u.PhienDangNhaps)
+                .HasForeignKey(p => p.UserID);
+
+            // === 7. Unique Indexes ===
+            modelBuilder.Entity<NguoiDung>().HasIndex(u => u.TenDangNhap).IsUnique();
+            modelBuilder.Entity<NguoiDung>().HasIndex(u => u.Email).IsUnique();
+
+            // === 8. Seed Data ===
+
+            modelBuilder.Entity<VaiTro>().HasData(
+                new VaiTro { VaiTroID = 1, TenVaiTro = "SuperAdmin", MoTa = "Quản trị viên cấp cao, toàn quyền hệ thống." },
+                new VaiTro { VaiTroID = 2, TenVaiTro = "Moderator", MoTa = "Kiểm duyệt viên, quản lý câu hỏi và người dùng." },
+                new VaiTro { VaiTroID = 3, TenVaiTro = "Player", MoTa = "Người dùng/Người chơi thông thường." }
+            );
+
+            modelBuilder.Entity<Quyen>().HasData(
+                new Quyen { QuyenID = 1, TenQuyen = "ql_nguoi_dung", MoTa = "Quản lý (Khóa/Mở khóa) tài khoản người dùng." },
+                new Quyen { QuyenID = 2, TenQuyen = "ql_cau_hoi", MoTa = "Thêm, sửa, xóa, duyệt câu hỏi." },
+                new Quyen { QuyenID = 3, TenQuyen = "ql_baocao", MoTa = "Truy cập và tạo báo cáo hệ thống." },
+                new Quyen { QuyenID = 4, TenQuyen = "ql_vai_tro", MoTa = "Quản lý vai trò và quyền hạn (Chỉ SuperAdmin)." }
+            );
+
+            modelBuilder.Entity<VaiTro_Quyen>().HasData(
+                new VaiTro_Quyen { VaiTroID = 1, QuyenID = 1 },
+                new VaiTro_Quyen { VaiTroID = 1, QuyenID = 2 },
+                new VaiTro_Quyen { VaiTroID = 1, QuyenID = 3 },
+                new VaiTro_Quyen { VaiTroID = 1, QuyenID = 4 },
+                new VaiTro_Quyen { VaiTroID = 2, QuyenID = 1 },
+                new VaiTro_Quyen { VaiTroID = 2, QuyenID = 2 },
+                new VaiTro_Quyen { VaiTroID = 2, QuyenID = 3 }
+            );
+
+            modelBuilder.Entity<NguoiDung>().HasData(
+                new NguoiDung { UserID = 1, TenDangNhap = "admin_sa", MatKhau = "hashed_sa_password", Email = "superadmin@quiz.com", HoTen = "Nguyễn Super Admin", TrangThai = true },
+                new NguoiDung { UserID = 2, TenDangNhap = "player01", MatKhau = "hashed_p1_password", Email = "player01@quiz.com", HoTen = "Trần Văn A", TrangThai = true },
+                new NguoiDung { UserID = 3, TenDangNhap = "player02", MatKhau = "hashed_p2_password", Email = "player02@quiz.com", HoTen = "Lê Thị B", TrangThai = true }
+            );
+
+            modelBuilder.Entity<Admin>().HasData(
+                new Admin { AdminID = 1, UserID = 1, VaiTroID = 1, TrangThai = true }
+            );
+
+            modelBuilder.Entity<CaiDatNguoiDung>().HasData(
+                new CaiDatNguoiDung { SettingID = 1, UserID = 2, AmThanh = true, NhacNen = false, ThongBao = true, NgonNgu = "vi" },
+                new CaiDatNguoiDung { SettingID = 2, UserID = 3, AmThanh = true, NhacNen = true, ThongBao = true, NgonNgu = "vi" }
+            );
+
+            modelBuilder.Entity<ChuDe>().HasData(
+                new ChuDe { ChuDeID = 1, TenChuDe = "Lịch Sử Việt Nam", MoTa = "Các sự kiện và nhân vật lịch sử quan trọng.", TrangThai = true },
+                new ChuDe { ChuDeID = 2, TenChuDe = "Toán Học Phổ Thông", MoTa = "Các bài toán đại số và hình học cơ bản.", TrangThai = true },
+                new ChuDe { ChuDeID = 3, TenChuDe = "Khoa Học Tự Nhiên", MoTa = "Kiến thức vật lý, hóa học, sinh học.", TrangThai = true }
+            );
+
+            modelBuilder.Entity<DoKho>().HasData(
+                new DoKho { DoKhoID = 1, TenDoKho = "Dễ", DiemThuong = 10 },
+                new DoKho { DoKhoID = 2, TenDoKho = "Trung bình", DiemThuong = 25 },
+                new DoKho { DoKhoID = 3, TenDoKho = "Khó", DiemThuong = 50 }
+            );
+
+            modelBuilder.Entity<TroGiup>().HasData(
+                new TroGiup { TroGiupID = 1, TenTroGiup = "50/50", MoTa = "Loại bỏ hai đáp án sai." },
+                new TroGiup { TroGiupID = 2, TenTroGiup = "Hỏi khán giả", MoTa = "Tham khảo ý kiến cộng đồng." }
+            );
+
+            modelBuilder.Entity<CauHoi>().HasData(
+                new CauHoi { CauHoiID = 1, ChuDeID = 1, DoKhoID = 1, NoiDung = "Ai là người phất cờ khởi nghĩa đầu tiên chống Pháp?", DapAnA = "Phan Đình Phùng", DapAnB = "Trần Văn Thời", DapAnC = "Trương Định", DapAnD = "Nguyễn Trung Trực", DapAnDung = "C" },
+                new CauHoi { CauHoiID = 2, ChuDeID = 1, DoKhoID = 2, NoiDung = "Chiến dịch Điện Biên Phủ diễn ra năm nào?", DapAnA = "1953", DapAnB = "1954", DapAnC = "1975", DapAnD = "1950", DapAnDung = "B" },
+                new CauHoi { CauHoiID = 3, ChuDeID = 2, DoKhoID = 1, NoiDung = "Căn bậc hai của 9 là bao nhiêu?", DapAnA = "3", DapAnB = "9", DapAnC = "3 và -3", DapAnD = "Không có", DapAnDung = "C" },
+                new CauHoi { CauHoiID = 4, ChuDeID = 3, DoKhoID = 2, NoiDung = "Chất nào sau đây không dẫn điện?", DapAnA = "Đồng", DapAnB = "Vàng", DapAnC = "Nhựa", DapAnD = "Bạc", DapAnDung = "C" }
+            );
+
+            modelBuilder.Entity<KetQua>().HasData(
+                new KetQua { KetQuaID = 1, UserID = 2, Diem = 50, SoCauDung = 2, TongCauHoi = 2, TrangThaiKetQua = "Hoàn thành", ThoiGian = DateTime.Now.AddHours(-5) },
+                new KetQua { KetQuaID = 2, UserID = 2, Diem = 75, SoCauDung = 3, TongCauHoi = 4, TrangThaiKetQua = "Hoàn thành", ThoiGian = DateTime.Now.AddHours(-2) },
+                new KetQua { KetQuaID = 3, UserID = 3, Diem = 25, SoCauDung = 1, TongCauHoi = 2, TrangThaiKetQua = "Hoàn thành", ThoiGian = DateTime.Now.AddHours(-1) }
+            );
+
+            modelBuilder.Entity<BXH>().HasData(
+                new BXH { BXHID = 1, UserID = 2, DiemTuan = 125, DiemThang = 125, HangTuan = 1, HangThang = 1 },
+                new BXH { BXHID = 2, UserID = 3, DiemTuan = 25, DiemThang = 25, HangTuan = 2, HangThang = 2 }
+            );
+
+            modelBuilder.Entity<ChuoiNgay>().HasData(
+                new ChuoiNgay { ChuoiID = 1, UserID = 2, SoNgayLienTiep = 5, NgayCapNhatCuoi = DateTime.Now },
+                new ChuoiNgay { ChuoiID = 2, UserID = 3, SoNgayLienTiep = 2, NgayCapNhatCuoi = DateTime.Now }
+            );
+
+            modelBuilder.Entity<QuizTuyChinh>().HasData(
+                new QuizTuyChinh { QuizTuyChinhID = 1, UserID = 2, TenQuiz = "Quiz Của Tôi", MoTa = "Các câu hỏi tôi thích nhất.", NgayTao = DateTime.Now }
+            );
+
+            modelBuilder.Entity<QuizNgay>().HasData(
+                new QuizNgay { QuizNgayID = 1, CauHoiID = 1, Ngay = DateTime.Now.Date }
+            );
+
+            modelBuilder.Entity<CauSai>().HasData(
+                new CauSai { CauSaiID = 1, UserID = 3, CauHoiID = 2, NgaySai = DateTime.Now.Date }
+            );
+
+            modelBuilder.Entity<QuizChiaSe>().HasData(
+                new QuizChiaSe { QuizChiaSeID = 1, QuizTuyChinhID = 1, UserGuiID = 2, UserNhanID = 3, NgayChiaSe = DateTime.Now }
+            );
         }
     }
 }

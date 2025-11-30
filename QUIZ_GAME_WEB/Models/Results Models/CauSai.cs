@@ -1,7 +1,7 @@
 ﻿using System;
-using QUIZ_GAME_WEB.Models.CoreEntities;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using QUIZ_GAME_WEB.Models.CoreEntities;
 using QUIZ_GAME_WEB.Models.QuizModels;
 
 namespace QUIZ_GAME_WEB.Models.ResultsModels
@@ -10,15 +10,19 @@ namespace QUIZ_GAME_WEB.Models.ResultsModels
     {
         [Key]
         public int CauSaiID { get; set; }
+
         [Required]
         public int UserID { get; set; }
+
         [Required]
         public int CauHoiID { get; set; }
+
         public DateTime NgaySai { get; set; } = DateTime.Now;
 
         [ForeignKey("UserID")]
-        public virtual NguoiDung NguoiDung { get; set; }
+        public virtual NguoiDung NguoiDung { get; set; } = null!;
+
         [ForeignKey("CauHoiID")]
-        public virtual CauHoi CauHoi { get; set; }
+        public virtual CauHoi CauHoi { get; set; } = null!;
     }
 }

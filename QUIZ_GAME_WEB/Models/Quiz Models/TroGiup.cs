@@ -6,9 +6,12 @@ namespace QUIZ_GAME_WEB.Models.QuizModels
     {
         [Key]
         public int TroGiupID { get; set; }
+
+        [Required]
         [MaxLength(50)]
-        public string TenTroGiup { get; set; } // Ví dụ: "50/50", "Hỏi khán giả"
+        public string TenTroGiup { get; set; } = null!;
+
         [MaxLength(255)]
-        public string MoTa { get; set; }
+        public string? MoTa { get; set; }
     }
 }

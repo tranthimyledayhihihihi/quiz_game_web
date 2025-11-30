@@ -1,35 +1,20 @@
-﻿// Models/Social & Ranking Models/Comment.cs
+﻿using QUIZ_GAME_WEB.Models.CoreEntities;
 using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using QUIZ_GAME_WEB.Models.CoreEntities;
 
-namespace QUIZ_GAME_WEB.Models.Social_RankingModels // Namespace đã được sửa
+namespace QUIZ_GAME_WEB.Models.SocialRankingModels
 {
     public class Comment
     {
-        [Key]
-        public int CommentID { get; set; }
-
-        [Required]
-        [ForeignKey("NguoiDung")]
-        public int UserID { get; set; }
-
-        // ID của đối tượng được bình luận (QuizID, QuestionID, v.v.)
-        [Required]
-        public int RelatedEntityID { get; set; }
-
-        [Required]
-        [MaxLength(50)]
-        public string EntityType { get; set; } // Ví dụ: "Quiz", "Question", "User"
-
-        [Required]
-        [MaxLength(500)]
-        public string NoiDung { get; set; }
-
+        public int CommentID { get; set; }          // PK
+        public int UserID { get; set; }             // FK tới NguoiDung
+        public string Content { get; set; } = null!;
         public DateTime NgayTao { get; set; } = DateTime.Now;
 
-        // Thuộc tính điều hướng
-        public virtual NguoiDung User { get; set; }
+        // Nếu bạn muốn repo hoạt động với EntityType và RelatedEntityID
+        public string EntityType { get; set; } = null!;
+        public int RelatedEntityID { get; set; }
+
+        // Navigation property
+        public NguoiDung? User { get; set; }
     }
 }

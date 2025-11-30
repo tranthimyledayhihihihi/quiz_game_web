@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using QUIZ_GAME_WEB.Data;
 using QUIZ_GAME_WEB.Models.Interfaces;
-using QUIZ_GAME_WEB.Models.Social_RankingModels;
+using QUIZ_GAME_WEB.Models.SocialRankingModels;
 using QUIZ_GAME_WEB.Models.SocialRankingModels;
 using System.Collections.Generic;
 using System.Linq;
