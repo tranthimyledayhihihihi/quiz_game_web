@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using QUIZ_GAME_WEB.Data;
 using QUIZ_GAME_WEB.Models.CoreEntities;
 using QUIZ_GAME_WEB.Models.InputModels;
-using QUIZ_GAME_WEB.Models.ResponseModels; // Chứa LoginResponseModel
+using QUIZ_GAME_WEB.Models.ViewModels; // Chứa LoginResponseModel
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

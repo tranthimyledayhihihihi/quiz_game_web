@@ -40,6 +40,7 @@ namespace QUIZ_GAME_WEB.Models.CoreEntities
         // 1. Mối quan hệ 1-1 (Admin, Cài đặt)
         // Fix cho QLNguoiDungController:
         public virtual Admin? Admin { get; set; }
+        public virtual Admin AdminInfo { get; set; } = null!;
 
         // Fix cho ProfileController:
         public virtual CaiDatNguoiDung? CaiDat { get; set; }

@@ -1,53 +1,82 @@
-﻿// Models/Implementations/QuizRepository.cs (ĐÃ SỬA LỖI)
+﻿// Models/Implementations/QuizRepository.cs
 using Microsoft.EntityFrameworkCore;
-using QUIZ_GAME_WEB.Data; // Cần thiết để tìm thấy QuizGameContext
+using QUIZ_GAME_WEB.Data;
 using QUIZ_GAME_WEB.Models.Interfaces;
-using QUIZ_GAME_WEB.Models.QuizModels; // Cần thiết cho CauHoi, ChuDe, DoKho
+using QUIZ_GAME_WEB.Models.QuizModels;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
 
 namespace QUIZ_GAME_WEB.Models.Implementations
 {
-    // Kế thừa GenericRepository<CauHoi>
+    // Kế thừa GenericRepository và thực thi IQuizRepository
     public class QuizRepository : GenericRepository<CauHoi>, IQuizRepository
     {
-        // Constructor phải gọi base(context) để GenericRepository nhận _context
+        // Constructor gọi base(context) để nhận DbContext
         public QuizRepository(QuizGameContext context) : base(context) { }
 
-        // Khắc phục lỗi thiếu hàm GetCorrectAnswerAsync
-        public async Task<string?> GetCorrectAnswerAsync(int cauHoiId)
-        {
-            // LỖI DBSET (nếu có): Kiểm tra QuizGameContext có DbSet<CauHoi> không
-            return await _context.CauHoi
-                                 .Where(q => q.CauHoiID == cauHoiId)
-                                 .Select(q => q.DapAnDung)
-                                 .FirstOrDefaultAsync();
-        }
+        // ===============================================
+        // CÁC HÀM TRUY VẤN ĐẶC THÙ (Specialized Queries)
+        // ===============================================
 
-        // Khắc phục lỗi thiếu hàm GetAllTopicsAsync
-        public async Task<IEnumerable<ChuDe>> GetAllTopicsAsync() => await _context.ChuDe.ToListAsync();
-
-        // Khắc phục lỗi thiếu hàm GetAllDifficultiesAsync
-        public async Task<IEnumerable<DoKho>> GetAllDifficultiesAsync() => await _context.DoKho.ToListAsync();
-
-        // Khắc phục lỗi thiếu hàm GetRandomQuestionsAsync
         public async Task<IEnumerable<CauHoi>> GetRandomQuestionsAsync(int count, int? chuDeId, int? doKhoId)
         {
-            var query = _context.CauHoi.AsQueryable();
+            var query = _context.CauHois.AsQueryable(); // Sử dụng DbSet<CauHoi> (tên số nhiều)
 
-            if (chuDeId.HasValue) query = query.Where(q => q.ChuDeID == chuDeId.Value);
-            if (doKhoId.HasValue) query = query.Where(q => q.DoKhoID == doKhoId.Value);
+            // Lọc theo Chủ đề (nếu có)
+            if (chuDeId.HasValue)
+            {
+                query = query.Where(q => q.ChuDeID == chuDeId.Value);
+            }
+            // Lọc theo Độ khó (nếu có)
+            if (doKhoId.HasValue)
+            {
+                query = query.Where(q => q.DoKhoID == doKhoId.Value);
+            }
 
-            // Logic thực thi random
+            // Logic Lấy ngẫu nhiên (ORDER BY NEWID() trong SQL) và giới hạn số lượng
             return await query
                          .OrderBy(r => Guid.NewGuid())
                          .Take(count)
                          .ToListAsync();
         }
 
-        // BỔ SUNG: Hàm AddTopic bị thiếu mà ContentManagementService cần
+        public async Task<string?> GetCorrectAnswerAsync(int cauHoiId)
+        {
+            // Truy vấn trực tiếp để lấy đáp án đúng
+            return await _context.CauHois
+                                 .Where(q => q.CauHoiID == cauHoiId)
+                                 .Select(q => q.DapAnDung)
+                                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<ChuDe>> GetAllTopicsAsync()
+        {
+            // Lấy danh sách Chủ đề
+            return await _context.ChuDes.ToListAsync();
+        }
+
+        public async Task<IEnumerable<DoKho>> GetAllDifficultiesAsync()
+        {
+            // Lấy danh sách Độ khó
+            return await _context.DoKhos.ToListAsync();
+        }
+
+        // ===============================================
+        // CÁC HÀM THAO TÁC ADMIN (IMPLEMENTATIONS BỊ THIẾU)
+        // ===============================================
+
+        // Thêm Chủ đề mới (được gọi từ ContentManagementService.cs)
         public void AddTopic(ChuDe topic)
         {
-            _context.ChuDe.Add(topic);
+            _context.ChuDes.Add(topic);
+        }
+
+        public async Task<int> CountActiveQuestionsAsync()
+        {
+            // Logic: Đếm tổng số câu hỏi đang hoạt động (Giả sử không có trạng thái ẩn)
+            return await _context.CauHois.CountAsync();
         }
     }
 }
