@@ -2,9 +2,10 @@
 using QUIZ_GAME_WEB.Models.Interfaces;
 using QUIZ_GAME_WEB.Models.ViewModels;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace QUIZ_GAME_WEB.Controllers.Quiz
 {
@@ -19,151 +20,66 @@ namespace QUIZ_GAME_WEB.Controllers.Quiz
             _quizRepository = quizRepository;
         }
 
-        // ----------------------------------------------------
-        // 1. Lấy câu hỏi ngẫu nhiên (GET /api/cauhoi/random)
-        // ----------------------------------------------------
-        [HttpGet("random")]
-        public async Task<IActionResult> GetRandomQuestions(
-            [FromQuery] int? chuDeId = null,
-            [FromQuery] int? doKhoId = null,
-            [FromQuery] int soLuong = 10)
+        // Hàm hỗ trợ lấy UserID từ JWT
+        private int GetUserIdFromClaim()
         {
-            try
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int userId))
             {
-                // Gọi hàm Repository thực hiện Random và Filter trong DB, trả về DTO
-                var randomQuestions = await _quizRepository.GetRandomQuestionsWithDetailsAsync(
-                    soLuong, chuDeId, doKhoId);
-
-                if (!randomQuestions.Any())
-                {
-                    return NotFound(new { message = "Không tìm thấy câu hỏi phù hợp." });
-                }
-
-                return Ok(randomQuestions);
+                throw new UnauthorizedAccessException("User ID không hợp lệ trong token.");
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return userId;
         }
 
-        // ----------------------------------------------------
-        // 2. Lấy câu hỏi theo chủ đề (GET /api/cauhoi/by-chude/{chuDeId})
-        // ----------------------------------------------------
-        [HttpGet("by-chude/{chuDeId}")]
-        public async Task<IActionResult> GetQuestionsByTopic(
-            int chuDeId,
+        // ========================================================
+        // 1. API LẤY CÂU HỎI SAI ĐỂ ÔN TẬP (Endpoint chính)
+        // ========================================================
+        [HttpGet("incorrect-review")]
+        [Authorize(AuthenticationSchemes = "Bearer")] // Bắt buộc đăng nhập
+        public async Task<IActionResult> GetIncorrectQuestionsForReview(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             try
             {
-                // Gọi hàm Repository thực hiện Lọc và Phân trang trong DB
-                var (questions, totalCount) = await _quizRepository.GetQuestionsFilteredAsync(
-                    pageNumber, pageSize, chuDeId: chuDeId);
+                int userId = GetUserIdFromClaim();
 
-                if (!questions.Any())
+                var (questions, totalCount) = await _quizRepository.GetIncorrectQuestionsByUserIdAsync(
+                    userId, pageNumber, pageSize);
+
+                if (totalCount == 0)
                 {
-                    // Trả về 200 OK với danh sách trống nếu totalCount = 0 (tùy chọn) hoặc NotFound
-                    return NotFound(new { message = $"Không tìm thấy câu hỏi cho chủ đề ID {chuDeId}." });
+                    return Ok(new { message = "Xin chúc mừng! Bạn chưa có câu hỏi nào trả lời sai cần ôn tập.", tongSoCauHoiSai = 0 });
                 }
 
                 return Ok(new
                 {
-                    tongSoCauHoi = totalCount,
+                    tongSoCauHoiSai = totalCount,
                     trangHienTai = pageNumber,
                     kichThuocTrang = pageSize,
                     tongSoTrang = (int)Math.Ceiling(totalCount / (double)pageSize),
                     danhSach = questions
                 });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException)
             {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        // ----------------------------------------------------
-        // 3. Lấy câu hỏi theo độ khó (GET /api/cauhoi/by-dokho/{doKhoId})
-        // ----------------------------------------------------
-        [HttpGet("by-dokho/{doKhoId}")]
-        public async Task<IActionResult> GetQuestionsByDifficulty(
-            int doKhoId,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20)
-        {
-            try
-            {
-                // Gọi hàm Repository thực hiện Lọc và Phân trang trong DB
-                var (questions, totalCount) = await _quizRepository.GetQuestionsFilteredAsync(
-                    pageNumber, pageSize, doKhoId: doKhoId);
-
-                if (!questions.Any())
-                {
-                    return NotFound(new { message = $"Không tìm thấy câu hỏi cho độ khó ID {doKhoId}." });
-                }
-
-                return Ok(new
-                {
-                    tongSoCauHoi = totalCount,
-                    trangHienTai = pageNumber,
-                    kichThuocTrang = pageSize,
-                    tongSoTrang = (int)Math.Ceiling(totalCount / (double)pageSize),
-                    danhSach = questions
-                });
+                return Unauthorized(new { message = "Vui lòng đăng nhập để xem danh sách ôn tập." });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = "Lỗi khi lấy danh sách câu hỏi sai: " + ex.Message });
             }
         }
 
-        // ----------------------------------------------------
-        // 4. Tìm kiếm câu hỏi (GET /api/cauhoi/search)
-        // ----------------------------------------------------
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchQuestions(
-            [FromQuery] string? keyword = null,
-            [FromQuery] int? chuDeId = null,
-            [FromQuery] int? doKhoId = null,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20)
-        {
-            try
-            {
-                // Gọi hàm Repository thực hiện TÌM KIẾM, LỌC và Phân trang trong DB
-                var (questions, totalCount) = await _quizRepository.GetQuestionsFilteredAsync(
-                    pageNumber, pageSize, keyword, chuDeId, doKhoId);
+        // ========================================================
+        // 2. CÁC API THỐNG KÊ VÀ TỔNG HỢP (Giữ Public)
+        // ========================================================
 
-                if (totalCount == 0) // Kiểm tra totalCount cho kết quả tìm kiếm
-                {
-                    return NotFound(new { message = "Không tìm thấy câu hỏi phù hợp." });
-                }
-
-                return Ok(new
-                {
-                    tongSoCauHoi = totalCount,
-                    trangHienTai = pageNumber,
-                    kichThuocTrang = pageSize,
-                    tongSoTrang = (int)Math.Ceiling(totalCount / (double)pageSize),
-                    danhSach = questions
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        // ----------------------------------------------------
-        // 5. Tổng số câu hỏi (GET /api/cauhoi/total-count)
-        // ----------------------------------------------------
         [HttpGet("total-count")]
         public async Task<IActionResult> GetTotalQuestionsCount()
         {
             try
             {
-                // Gọi hàm đếm trực tiếp trong DB
                 var totalCount = await _quizRepository.CountAllCauHoisAsync();
                 return Ok(new { tongSoCauHoi = totalCount });
             }
@@ -173,25 +89,19 @@ namespace QUIZ_GAME_WEB.Controllers.Quiz
             }
         }
 
-        // ----------------------------------------------------
-        // 6. Thống kê câu hỏi (GET /api/cauhoi/statistics)
-        // ----------------------------------------------------
         [HttpGet("statistics")]
         public async Task<IActionResult> GetQuestionStatistics()
         {
             try
             {
-                // Tải toàn bộ Entity kèm chi tiết (Include ChuDe và DoKho)
                 var allQuestions = await _quizRepository.GetAllCauHoisWithDetailsAsync();
 
                 var statsByChuDe = allQuestions
-                    // GroupBy sử dụng TenChuDe (Navigation Property)
                     .GroupBy(q => q.ChuDe?.TenChuDe ?? "Chưa phân loại")
                     .Select(g => new { tenChuDe = g.Key, soLuong = g.Count() })
                     .ToList();
 
                 var statsByDoKho = allQuestions
-                    // GroupBy sử dụng TenDoKho (Navigation Property)
                     .GroupBy(q => q.DoKho?.TenDoKho ?? "Chưa phân loại")
                     .Select(g => new { tenDoKho = g.Key, soLuong = g.Count() })
                     .ToList();
@@ -208,5 +118,7 @@ namespace QUIZ_GAME_WEB.Controllers.Quiz
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // *LƯU Ý: Các API công cộng GetRandom, Search, GetByChuDe, GetByDoKho đã bị loại bỏ theo yêu cầu.*
     }
 }
