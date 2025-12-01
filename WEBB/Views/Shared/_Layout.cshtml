@@ -1,19 +1,40 @@
-﻿<!DOCTYPE html>
+﻿@{
+    Layout = null;  // RẤT QUAN TRỌNG: layout không trỏ tới layout khác
+    var title = ViewBag.Title ?? "IQuiz";
+}
+
+<!DOCTYPE html>
 <html>
 <head>
-    <title>@ViewBag.Title - Quiz Game</title>
+    <meta charset="utf-8" />
+    <title>@title</title>
+
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+
+    <!-- THÊM DÒNG NÀY ĐỂ FIX LỖI SECTION Styles -->
+    @RenderSection("Styles", required: false)
 </head>
 <body>
-    <div class="container body-content">
-        @RenderBody() <hr />
-        <footer>
-            <p>&copy; @DateTime.Now.Year - My Quiz Game</p>
-        </footer>
+    <!-- Header chung -->
+    <header>
+        <h1>IQuiz</h1>
+        <!-- menu, logo, v.v. -->
+    </header>
+
+    <!-- NỘI DUNG CỦA CÁC VIEW CON SẼ HIỆN Ở ĐÂY -->
+    <div class="container">
+        @RenderBody()
     </div>
-    <script src="~/Scripts/jquery-3.7.0.min.js"></script>
-    <script src="~/Scripts/bootstrap.min.js"></script>
 
-    @RenderSection("scripts", required: false)
+    <!-- Footer chung -->
+    <footer>
+        <p>&copy; @DateTime.Now.Year - IQuiz</p>
+    </footer>
 
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

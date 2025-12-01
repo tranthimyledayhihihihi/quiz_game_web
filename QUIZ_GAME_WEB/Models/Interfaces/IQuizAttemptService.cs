@@ -14,7 +14,15 @@ namespace QUIZ_GAME_WEB.Models.Interfaces
         /// <param name="userId">ID người chơi</param>
         /// <param name="options">Tùy chọn khi bắt đầu</param>
         /// <returns>ID của phiên làm bài mới</returns>
+        /// 
         Task<int> StartNewQuizAttemptAsync(int userId, GameStartOptions options);
+        /// <summary>
+        /// Bắt đầu một phiên làm bài Quiz Ngày cố định.
+        /// </summary>
+        /// <param name="userId">ID người chơi.</param>
+        /// <param name="cauHoiId">ID câu hỏi cố định của ngày hôm nay.</param>
+        /// <returns>ID của phiên làm bài mới (attemptId).</returns>
+        Task<int> StartDailyQuizAttemptAsync(int userId, int cauHoiId);
 
         /// <summary>
         /// Nộp đáp án cho một câu hỏi trong phiên Quiz

@@ -1,9 +1,9 @@
-﻿// Models/Implementations/UserRepository.cs
-using Microsoft.EntityFrameworkCore; // Cần cho các hàm Async và truy vấn
+﻿using Microsoft.EntityFrameworkCore;
 using QUIZ_GAME_WEB.Data;
 using QUIZ_GAME_WEB.Models.CoreEntities;
 using QUIZ_GAME_WEB.Models.Implementations;
 using QUIZ_GAME_WEB.Models.Interfaces;
+using QUIZ_GAME_WEB.Models.ViewModels; // Cần cho UserProfileDto
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,40 +16,61 @@ public class UserRepository : GenericRepository<NguoiDung>, IUserRepository
 
     public UserRepository(QuizGameContext context) : base(context) // Giả định constructor cơ sở
     {
+        // Chú ý: Context này thường được truy cập thông qua lớp base để tránh lỗi "hiding inherited member"
+        // Nhưng giữ nguyên cấu trúc _context = context theo yêu cầu.
         _context = context;
     }
 
     // ----------------------------------------------------
-    // CÁC HÀM TRIỂN KHAI CHO ADMIN/ROLE
+    // I. CÁC HÀM TRUY VẤN NGUOIDUNG CƠ BẢN
     // ----------------------------------------------------
 
-    // TRIỂN KHAI HÀM ADDADMINENTRY (Giải quyết lỗi 'Admin' to 'NguoiDung')
+    public async Task<NguoiDung?> GetByTenDangNhapAsync(string username)
+    {
+        return await _context.NguoiDungs
+                                .FirstOrDefaultAsync(u => u.TenDangNhap == username);
+    }
+
+    public async Task<bool> IsUsernameOrEmailInUseAsync(string username, string email)
+    {
+        return await _context.NguoiDungs
+                                .AnyAsync(u => u.TenDangNhap == username || u.Email == email);
+    }
+
+    public async Task<int> CountTotalUsersAsync()
+    {
+        return await _context.NguoiDungs.CountAsync();
+    }
+
+    public async Task<bool> IsEmailInUseAsync(string email)
+    {
+        return await _context.NguoiDungs
+                                .AnyAsync(u => u.Email == email);
+    }
+
+    // ----------------------------------------------------
+    // II. CÁC HÀM LIÊN QUAN ĐẾN ROLE & ADMIN
+    // ----------------------------------------------------
+
     public void AddAdminEntry(Admin entry)
     {
-        // SỬA LỖI: Thao tác trực tiếp trên DbSet<Admin>
         _context.Admins.Add(entry);
-        // Lưu ý: DbContext.Add() không phải là hàm async, nên không cần await và hàm là void
     }
 
-    // TRIỂN KHAI HÀM GET ADMIN ENTRY
     public async Task<Admin?> GetAdminEntryByUserIdAsync(int userId)
     {
-        // Thao tác trực tiếp trên DbSet<Admin>
         return await _context.Admins
-                             .FirstOrDefaultAsync(a => a.UserID == userId);
+                                .FirstOrDefaultAsync(a => a.UserID == userId);
     }
 
-    // TRIỂN KHAI HÀM GET ROLE
     public async Task<VaiTro?> GetRoleByIdAsync(int roleId)
     {
-        // Thao tác trực tiếp trên DbSet<VaiTro>
         return await _context.VaiTros.FindAsync(roleId);
     }
 
-    // TRIỂN KHAI HÀM GET ROLE BY USER ID
+    // Lấy vai trò chính của Admin/Moderator (dựa trên bảng Admin)
     public async Task<VaiTro?> GetRoleByUserIdAsync(int userId)
     {
-        // Thao tác JOIN giữa Admins và VaiTros
         var role = await (from a in _context.Admins
                           join r in _context.VaiTros on a.VaiTroID equals r.VaiTroID
                           where a.UserID == userId
@@ -58,41 +79,84 @@ public class UserRepository : GenericRepository<NguoiDung>, IUserRepository
         return role;
     }
 
-    // ----------------------------------------------------
-    // CÁC HÀM TRIỂN KHAI CHO NGUOIDUNG (Cần giữ lại)
-    // ----------------------------------------------------
-
-    public async Task<NguoiDung?> GetByTenDangNhapAsync(string username)
-    {
-        return await _context.NguoiDungs
-                             .FirstOrDefaultAsync(u => u.TenDangNhap == username);
-    }
-
-    public async Task<bool> IsUsernameOrEmailInUseAsync(string username, string email)
-    {
-        return await _context.NguoiDungs
-                             .AnyAsync(u => u.TenDangNhap == username || u.Email == email);
-    }
-
-    public async Task<int> CountTotalUsersAsync()
-    {
-        return await _context.NguoiDungs.CountAsync();
-    }
-
-    public Task<NguoiDung?> GetUserWithSettingsAndAdminInfoAsync(int userId)
-    {
-        throw new NotImplementedException();
-    }
-
     public void Update(Admin adminEntry)
     {
-        throw new NotImplementedException();
+        _context.Admins.Update(adminEntry);
     }
 
-    public Task<bool> IsEmailInUseAsync(string email)
+    // ----------------------------------------------------
+    // III. CÁC HÀM TRUY VẤN PHỨC HỢP & SOCIAL
+    // ----------------------------------------------------
+
+    /// <summary>
+    /// Lấy user + setting (CaiDatNguoiDung) + thông tin admin (bảng Admin)
+    /// </summary>
+    public async Task<NguoiDung?> GetUserWithSettingsAndAdminInfoAsync(int userId)
     {
-        throw new NotImplementedException();
+        return await _context.NguoiDungs
+                                .Include(u => u.CaiDat)
+                                .Include(u => u.Admin)
+                                .FirstOrDefaultAsync(u => u.UserID == userId);
     }
 
-    // ... (Thêm triển khai cho GetUserWithSettingsAndAdminInfoAsync và các hàm IGenericRepository<NguoiDung> khác)
+    /// <summary>
+    /// Lấy thông tin hồ sơ công khai của người dùng khác, ánh xạ sang DTO.
+    /// </summary>
+    /// Lấy bản ghi CaiDatNguoiDung theo UserID.
+    /// </summary>
+    public async Task<CaiDatNguoiDung?> GetCaiDatByUserIdAsync(int userId)
+    {
+        // Giả định DbSet là _context.CaiDatNguoiDungs
+        return await _context.CaiDatNguoiDungs
+                             .FirstOrDefaultAsync(c => c.UserID == userId);
+    }
+
+    /// <summary>
+    /// Thêm bản ghi cài đặt mới.
+    /// </summary>
+    public void AddCaiDat(CaiDatNguoiDung setting)
+    {
+        _context.CaiDatNguoiDungs.Add(setting);
+    }
+
+    /// <summary>
+    /// Cập nhật bản ghi cài đặt.
+    /// </summary>
+    public void UpdateCaiDat(CaiDatNguoiDung setting)
+    {
+        // EF Core sẽ theo dõi và cập nhật nếu entity đã được thay đổi.
+        _context.CaiDatNguoiDungs.Update(setting);
+    }
+    public async Task<UserProfileDto?> GetPublicProfileAsync(int targetUserId)
+    {
+        // Tải các Navigation Properties cần thiết để tính toán
+        var userQuery = _context.NguoiDungs
+            .Include(u => u.BXHs) // Để tính điểm
+            .Include(u => u.KetQuas) // Để tính số bài làm
+            .Include(u => u.PhienDangNhaps) // Để kiểm tra đăng nhập cuối
+            .AsNoTracking()
+            .Where(u => u.UserID == targetUserId);
+
+        var profile = await userQuery
+            .Select(u => new UserProfileDto
+            {
+                UserID = u.UserID,
+                TenDangNhap = u.TenDangNhap,
+                HoTen = u.HoTen,
+                AnhDaiDien = u.AnhDaiDien,
+                NgayDangKy = u.NgayDangKy,
+
+                // Tính toán các chỉ số thống kê cơ bản:
+                TongSoDiem = u.BXHs.OrderByDescending(b => b.DiemThang).Select(b => b.DiemThang).FirstOrDefault(),
+                TongSoQuizDaLam = u.KetQuas.Count(),
+
+                // Các chỉ số Social (sẽ được tính trong SocialService/Repository, nhưng được placeholder ở đây):
+               // SoNguoiTheoDoi = _context.TheoDois.Count(t => t.FolloweeID == targetUserId),
+                //DangTheoDoi = _context.TheoDois.Count(t => t.FollowerID == targetUserId),
+                IsFollowing = false // Luôn là false ở Repository, được set lại trong Controller
+            })
+            .FirstOrDefaultAsync();
+
+        return profile;
+    }
 }

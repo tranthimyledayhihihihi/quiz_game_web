@@ -1,9 +1,9 @@
-﻿// Models/Quiz Models/CauHoi.cs
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Collections.Generic;
-using QUIZ_GAME_WEB.Models.ResultsModels; // Cần thiết cho Navigation
+using QUIZ_GAME_WEB.Models.ResultsModels;
+using System.Text.Json.Serialization; // ✅ Cần cho [JsonIgnore]
 
 namespace QUIZ_GAME_WEB.Models.QuizModels
 {
@@ -13,7 +13,7 @@ namespace QUIZ_GAME_WEB.Models.QuizModels
         public int CauHoiID { get; set; }
 
         [Required]
-        [ForeignKey(nameof(ChuDe))] // Sử dụng nameof() là cách làm tốt hơn
+        [ForeignKey(nameof(ChuDe))]
         public int ChuDeID { get; set; }
 
         [Required]
@@ -22,10 +22,10 @@ namespace QUIZ_GAME_WEB.Models.QuizModels
 
         [Required]
         [MaxLength(500)]
-        public string NoiDung { get; set; } = null!; // Khắc phục Non-nullable Warning
+        public string NoiDung { get; set; } = null!;
 
         [MaxLength(255)]
-        [Required] // Giả định đáp án A, B, C, D là bắt buộc nếu có 4 lựa chọn
+        [Required]
         public string DapAnA { get; set; } = null!;
         [MaxLength(255)]
         [Required]
@@ -39,16 +39,36 @@ namespace QUIZ_GAME_WEB.Models.QuizModels
 
         [Required]
         [MaxLength(10)]
-        public string DapAnDung { get; set; } = null!; // KHẮC PHỤC: Trong DB là NOT NULL
+        public string DapAnDung { get; set; } = null!;
 
         [MaxLength(255)]
-        public string? HinhAnh { get; set; } // Bổ sung: Dựa trên lỗi ContentManagementService
+        public string? HinhAnh { get; set; }
 
-        public DateTime NgayTao { get; set; } = DateTime.Now; // Bổ sung: Cho Admin/Dashboard
+        public DateTime NgayTao { get; set; } = DateTime.Now;
 
+        // ===============================================
+        // ✅ BỔ SUNG KHÓA NGOẠI CHO UGC (Quiz Tuy Chỉnh)
+        // ===============================================
+
+        /// <summary>
+        /// Khóa Ngoại đến QuizTuyChinh nếu câu hỏi này là một phần của đề xuất UGC.
+        /// Cho phép NULL vì câu hỏi cũng có thể là câu hỏi gốc.
+        /// </summary>
+        [ForeignKey(nameof(QuizTuyChinh))]
+        public int? QuizTuyChinhID { get; set; }
+
+        // ===============================================
         // Thuộc tính điều hướng (Navigation Properties)
+        // ===============================================
+
         public virtual ChuDe ChuDe { get; set; } = null!;
         public virtual DoKho DoKho { get; set; } = null!;
+
+        /// <summary>
+        /// Thuộc tính điều hướng đến QuizTuyChinh mà câu hỏi này thuộc về.
+        /// </summary>
+        [JsonIgnore] // Ngăn chặn vòng lặp JSON
+        public virtual QuizTuyChinh? QuizTuyChinh { get; set; } // 1:N với QuizTuyChinh
 
         // Quan hệ 1:N với CauSai (Log lỗi)
         public virtual ICollection<CauSai> CauSais { get; set; } = new HashSet<CauSai>();

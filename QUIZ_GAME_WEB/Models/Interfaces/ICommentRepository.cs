@@ -1,27 +1,41 @@
 ﻿using QUIZ_GAME_WEB.Models.SocialRankingModels; // Cần cho Entity Comment
-using QUIZ_GAME_WEB.Models.Interfaces; // Cần cho IGenericRepository (Giả định)
+using QUIZ_GAME_WEB.Models.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace QUIZ_GAME_WEB.Models.Interfaces
 {
-    // Giả định IGenericRepository đã được định nghĩa và chứa các hàm CRUD cơ bản
     public interface ICommentRepository : IGenericRepository<Comment>
     {
+        // ========================================================
+        // I. ✅ HÀM TRUY VẤN (SỬ DỤNG ENTITY COMMENT VÀ PHÂN TRANG)
+        // ========================================================
+
         /// <summary>
-        /// Lấy danh sách bình luận (Comment) theo loại đối tượng và ID đối tượng được tham chiếu.
+        /// Lấy danh sách bình luận (Comment) theo loại đối tượng và ID đối tượng (có phân trang).
         /// </summary>
-        /// <param name="entityType">Loại đối tượng (ví dụ: "Quiz", "Question").</param>
+        /// <param name="entityType">Loại đối tượng.</param>
         /// <param name="relatedEntityId">ID của đối tượng được bình luận.</param>
-        /// <returns>Danh sách các bình luận liên quan, sắp xếp theo ngày tạo mới nhất.</returns>
-        Task<IEnumerable<Comment>> GetCommentsByEntityAsync(string entityType, int relatedEntityId);
+        /// <param name="pageNumber">Số trang.</param>
+        /// <param name="pageSize">Kích thước trang.</param>
+        /// <returns>Danh sách Comment Entity và tổng số bình luận (TotalCount).</returns>
+        // ✅ Sửa: Trả về Comment Entity thay vì CommentDto
+        Task<(IEnumerable<Comment> Comments, int TotalCount)> GetCommentsByEntityAsync(
+            string entityType,
+            int relatedEntityId,
+            int pageNumber,
+            int pageSize);
 
         /// <summary>
         /// Đếm tổng số bình luận cho một đối tượng cụ thể.
         /// </summary>
-        /// <param name="entityType">Loại đối tượng.</param>
-        /// <param name="relatedEntityId">ID của đối tượng.</param>
-        /// <returns>Tổng số bình luận.</returns>
         Task<int> CountCommentsForEntityAsync(string entityType, int relatedEntityId);
+
+        // ========================================================
+        // II. CÁC HÀM THAO TÁC CƠ BẢN
+        // ========================================================
+
+        void Update(Comment comment);
+        void Delete(Comment comment);
     }
 }

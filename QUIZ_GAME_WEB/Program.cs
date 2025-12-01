@@ -47,7 +47,17 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 });
+// In Program.cs (or Startup.cs/ConfigureServices)
+// Trong Program.cs, tìm builder.Services.Add...
 
+// Đăng ký cho các Service khác (ví dụ):
+// builder.Services.AddScoped<IQuizAttemptService, QuizAttemptService>();
+
+// ✅ THÊM DÒNG NÀY ĐỂ KHẮC PHỤC LỖI IProfileService
+builder.Services.AddScoped<QUIZ_GAME_WEB.Models.Interfaces.IProfileService, QUIZ_GAME_WEB.Models.Implementations.ProfileService>();
+// Registering the Reward Service implementation
+builder.Services.AddScoped<QUIZ_GAME_WEB.Models.Interfaces.IRewardService, QUIZ_GAME_WEB.Models.Implementations.RewardService>();
+builder.Services.AddScoped<QUIZ_GAME_WEB.Models.Interfaces.ISocialRepository, QUIZ_GAME_WEB.Models.Implementations.SocialRepository>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -77,6 +87,17 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+// === Dependency Injection ===
+// Repositories
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IResultRepository, ResultRepository>();
+
+// UnitOfWork
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Services
+builder.Services.AddScoped<IQuizAttemptService, QuizAttemptService>();
+
 
 // === Dependency Injection ===
 // Repositories

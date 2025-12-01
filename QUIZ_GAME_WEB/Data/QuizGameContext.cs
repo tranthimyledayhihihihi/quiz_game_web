@@ -1,10 +1,10 @@
-﻿// Data/QuizGameContext.cs
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using QUIZ_GAME_WEB.Models.CoreEntities;
 using QUIZ_GAME_WEB.Models.QuizModels;
 using QUIZ_GAME_WEB.Models.ResultsModels;
 using QUIZ_GAME_WEB.Models.SocialRankingModels;
 using System;
+using System.Linq;
 
 namespace QUIZ_GAME_WEB.Data
 {
@@ -48,20 +48,7 @@ namespace QUIZ_GAME_WEB.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // === 0. QuizChiaSe relationships ===
-            modelBuilder.Entity<QuizChiaSe>()
-                .HasOne(q => q.UserGui)
-                .WithMany(u => u.QuizChiaSesGui)
-                .HasForeignKey(q => q.UserGuiID)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<QuizChiaSe>()
-                .HasOne(q => q.UserNhan)
-                .WithMany(u => u.QuizChiaSesNhan)
-                .HasForeignKey(q => q.UserNhanID)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // === 1. Mapping table names ===
+            // === 1. Mapping table names (Giữ nguyên) ===
             modelBuilder.Entity<Admin>().ToTable("Admin");
             modelBuilder.Entity<NguoiDung>().ToTable("NguoiDung");
             modelBuilder.Entity<VaiTro>().ToTable("VaiTro");
@@ -87,70 +74,69 @@ namespace QUIZ_GAME_WEB.Data
             modelBuilder.Entity<BXH>().ToTable("BXH");
             modelBuilder.Entity<NguoiDungOnline>().ToTable("NguoiDungOnline");
 
-            // === 2. N:N VaiTro_Quyen ===
+            // ===============================================
+            // ✅ THIẾT LẬP QUAN HỆ KHÓA NGOẠI
+            // ===============================================
+
+            // === 2. N:N VaiTro_Quyen (Giữ nguyên) ===
             modelBuilder.Entity<VaiTro_Quyen>()
                 .HasKey(vq => new { vq.VaiTroID, vq.QuyenID });
-            modelBuilder.Entity<VaiTro_Quyen>()
-                .HasOne(vq => vq.VaiTro)
-                .WithMany(v => v.VaiTro_Quyens)
-                .HasForeignKey(vq => vq.VaiTroID);
-            modelBuilder.Entity<VaiTro_Quyen>()
-                .HasOne(vq => vq.Quyen)
-                .WithMany(q => q.VaiTro_Quyens)
-                .HasForeignKey(vq => vq.QuyenID);
 
-            // === 3. 1:1 Admin ↔ NguoiDung ===
+            // === 3. 1:N VaiTro ↔ NguoiDung (QUAN HỆ PHÂN QUYỀN) ===
+            modelBuilder.Entity<NguoiDung>()
+                .HasOne(u => u.VaiTro)
+                .WithMany(v => v.NguoiDungs)
+                .HasForeignKey(u => u.VaiTroID)
+                .IsRequired(false); // Cho phép NULL nếu vai trò không bắt buộc (tùy chọn)
+
+            // === 4. 1:1 Admin ↔ NguoiDung (Giữ nguyên) ===
             modelBuilder.Entity<Admin>()
                 .HasOne(a => a.User)
                 .WithOne(u => u.Admin)
                 .HasForeignKey<Admin>(a => a.UserID);
 
-            // === 4. 1:1 CaiDatNguoiDung ↔ NguoiDung ===
-            modelBuilder.Entity<CaiDatNguoiDung>()
-                .HasOne(c => c.NguoiDung)
-                .WithOne(u => u.CaiDat)
-                .HasForeignKey<CaiDatNguoiDung>(c => c.UserID);
-
-            // === 5. 1:N NguoiDung ↔ Comment ===
-            modelBuilder.Entity<Comment>()
-                .HasOne(c => c.User)
-                .WithMany(u => u.Comments)
-                .HasForeignKey(c => c.UserID);
-
-            // === 6. 1:N NguoiDung ↔ PhienDangNhap ===
-            modelBuilder.Entity<PhienDangNhap>()
-                .HasOne(p => p.NguoiDung)
-                .WithMany(u => u.PhienDangNhaps)
-                .HasForeignKey(p => p.UserID);
-
-            // === 7. 1:N QuizAttempt ↔ CauSai & KetQua ===
-
-            // Fix cascade delete multiple paths
-            modelBuilder.Entity<QuizAttempt>()
-                .HasOne(qa => qa.NguoiDung)
-                .WithMany(u => u.QuizAttempts)
-                .HasForeignKey(qa => qa.UserID)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<QuizAttempt>()
-                .HasOne(qa => qa.QuizTuyChinh)
-                .WithMany(qt => qt.QuizAttempts)
-                .HasForeignKey(qa => qa.QuizTuyChinhID)
-                .OnDelete(DeleteBehavior.Restrict);
-
+            // === 5. 1:N NguoiDung ↔ CauSai (FK trên bảng CauSai) ===
             modelBuilder.Entity<CauSai>()
-                .HasOne(cs => cs.QuizAttempt)
-                .WithMany(qa => qa.CauSais)
-                .HasForeignKey(cs => cs.QuizAttemptID);
+                .HasOne(cs => cs.NguoiDung) // Giả định CauSai có Navigation Property NguoiDung
+                .WithMany(u => u.CauSais)
+                .HasForeignKey(cs => cs.UserID);
 
-            modelBuilder.Entity<KetQua>()
-                .HasOne(kq => kq.QuizAttempt)
-                .WithOne(qa => qa.KetQua)
-                .HasForeignKey<KetQua>(kq => kq.QuizAttemptID);
+            // === 6. 1:N QuizTuyChinh ↔ CauHoi (UGC - FK trên bảng CauHoi) ===
+            modelBuilder.Entity<CauHoi>()
+                .HasOne(ch => ch.QuizTuyChinh)
+                .WithMany(qt => qt.CauHois)
+                .HasForeignKey(ch => ch.QuizTuyChinhID)
+                .IsRequired(false) // Cho phép câu hỏi tồn tại độc lập
+                .OnDelete(DeleteBehavior.SetNull);
 
-            // === 8. Unique Indexes ===
+            // === 7. 1:N QuizChiaSe (Giữ nguyên) ===
+            modelBuilder.Entity<QuizChiaSe>()
+                .HasOne(q => q.UserGui)
+                .WithMany(u => u.QuizChiaSesGui)
+                .HasForeignKey(q => q.UserGuiID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<QuizChiaSe>()
+                .HasOne(q => q.UserNhan)
+                .WithMany(u => u.QuizChiaSesNhan)
+                .HasForeignKey(q => q.UserNhanID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // === 8. Unique Indexes (Giữ nguyên) ===
             modelBuilder.Entity<NguoiDung>().HasIndex(u => u.TenDangNhap).IsUnique();
             modelBuilder.Entity<NguoiDung>().HasIndex(u => u.Email).IsUnique();
+
+
+            // ===============================================
+            // ✅ SEED DATA (Sửa lỗi thiếu VaiTroID)
+            // ===============================================
+
+            // NguoiDung (Bổ sung VaiTroID)
+            modelBuilder.Entity<NguoiDung>().HasData(
+                new NguoiDung { UserID = 1, TenDangNhap = "admin_sa", MatKhau = "hashed_sa_password", Email = "superadmin@quiz.com", HoTen = "Nguyễn Super Admin", TrangThai = true, VaiTroID = 1 }, // SuperAdmin
+                new NguoiDung { UserID = 2, TenDangNhap = "player01", MatKhau = "hashed_p1_password", Email = "player01@quiz.com", HoTen = "Trần Văn A", TrangThai = true, VaiTroID = 3 }, // Player
+                new NguoiDung { UserID = 3, TenDangNhap = "player02", MatKhau = "hashed_p2_password", Email = "player02@quiz.com", HoTen = "Lê Thị B", TrangThai = true, VaiTroID = 3 }  // Player
+            );
 
             // === 9. Seed Data ===
             // VaiTro
@@ -177,13 +163,6 @@ namespace QUIZ_GAME_WEB.Data
                 new VaiTro_Quyen { VaiTroID = 2, QuyenID = 1 },
                 new VaiTro_Quyen { VaiTroID = 2, QuyenID = 2 },
                 new VaiTro_Quyen { VaiTroID = 2, QuyenID = 3 }
-            );
-
-            // NguoiDung
-            modelBuilder.Entity<NguoiDung>().HasData(
-                new NguoiDung { UserID = 1, TenDangNhap = "admin_sa", MatKhau = "hashed_sa_password", Email = "superadmin@quiz.com", HoTen = "Nguyễn Super Admin", TrangThai = true },
-                new NguoiDung { UserID = 2, TenDangNhap = "player01", MatKhau = "hashed_p1_password", Email = "player01@quiz.com", HoTen = "Trần Văn A", TrangThai = true },
-                new NguoiDung { UserID = 3, TenDangNhap = "player02", MatKhau = "hashed_p2_password", Email = "player02@quiz.com", HoTen = "Lê Thị B", TrangThai = true }
             );
 
             // Admin

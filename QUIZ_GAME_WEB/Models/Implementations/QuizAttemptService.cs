@@ -19,6 +19,56 @@ namespace QUIZ_GAME_WEB.Models.Implementations
         // private static int _attemptIdCounter = 1000; // ĐÃ BỎ
 
         public QuizAttemptService(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+        public async Task<int> StartDailyQuizAttemptAsync(int userId, int cauHoiId)
+        {
+            // 1. Lấy câu hỏi cố định của ngày hôm nay
+            var question = await _unitOfWork.Quiz.GetByIdAsync(cauHoiId);
+
+            if (question == null)
+            {
+                throw new Exception($"Không tìm thấy câu hỏi với ID {cauHoiId} cho Quiz Ngày.");
+            }
+
+            // 2. Tạo QuizTuyChinh mặc định
+            var defaultQuiz = new QuizTuyChinh
+            {
+                UserID = userId,
+                TenQuiz = "Quiz Ngày - " + DateTime.Now.ToString("dd/MM/yyyy"),
+                MoTa = "Bài Quiz cố định hàng ngày",
+                NgayTao = DateTime.Now,
+                TrangThai = "Approved" // Đã duyệt vì là Quiz hệ thống
+            };
+
+            await _unitOfWork.Quiz.AddQuizTuyChinhAsync(defaultQuiz);
+            await _unitOfWork.CompleteAsync();
+
+            // 3. Tạo QuizAttempt
+            var quizAttempt = new QuizAttempt
+            {
+                UserID = userId,
+                QuizTuyChinhID = defaultQuiz.QuizTuyChinhID,
+                NgayBatDau = DateTime.Now,
+                TrangThai = "Đang làm",
+                SoCauHoiLam = 0,
+                SoCauDung = 0,
+                Diem = 0
+            };
+
+            await _unitOfWork.Quiz.AddQuizAttemptAsync(quizAttempt);
+            await _unitOfWork.CompleteAsync();
+
+            // 4. Lưu session vào memory (chỉ chứa 1 câu hỏi duy nhất)
+            _activeSessions[quizAttempt.QuizAttemptID] = new QuizSessionData
+            {
+                QuizAttempt = quizAttempt,
+                Questions = new Queue<CauHoi>(new[] { question }), // Chỉ có 1 câu hỏi
+                TotalQuestions = 1,
+                CorrectAnswers = 0,
+                UserId = userId
+            };
+
+            return quizAttempt.QuizAttemptID;
+        }
 
         // 1. Bắt đầu làm bài
         public async Task<int> StartNewQuizAttemptAsync(int userId, GameStartOptions options)

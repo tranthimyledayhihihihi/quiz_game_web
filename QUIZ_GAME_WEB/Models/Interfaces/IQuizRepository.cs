@@ -33,6 +33,35 @@ namespace QUIZ_GAME_WEB.Models.Interfaces
         // ===============================================
         // IV. ✅ CÁC HÀM QUẢN LÝ QUIZ TÙY CHỈNH (UGC)
         // ===============================================
+        /// Thêm bản ghi QuizChiaSe mới vào DB.
+        /// </summary>
+        Task AddQuizChiaSeAsync(QuizChiaSe share);
+
+        /// <summary>
+        /// Kiểm tra xem Quiz có tồn tại và thuộc sở hữu của người dùng hay không.
+        /// (Dùng để xác thực trước khi Share)
+        /// </summary>
+        Task<bool> CheckQuizOwnershipAndExistenceAsync(int quizId, int userId);
+
+        // ===============================================
+        // II. ✅ CÁC HÀM TRUY VẤN LỊCH SỬ CHIA SẺ
+        // ===============================================
+
+        /// <summary>
+        /// Lấy danh sách các Quiz mà người dùng đã gửi đi.
+        /// </summary>
+        Task<(IEnumerable<QuizShareDto> Shares, int TotalCount)> GetSharedQuizzesBySenderAsync(int userId);
+
+        /// <summary>
+        /// Lấy danh sách các Quiz mà người dùng đã nhận được.
+        /// </summary>
+        Task<(IEnumerable<QuizShareDto> Shares, int TotalCount)> GetSharedQuizzesByReceiverAsync(int userId);
+
+        /// <summary>
+        /// Lấy chi tiết một bản ghi chia sẻ cụ thể.
+        /// </summary>
+        Task<QuizNgayDetailsDto?> GetTodayQuizDetailsAsync();
+        Task<QuizShareDetailDto?> GetShareDetailByIdAsync(int shareId);
 
         Task<(IEnumerable<QuizTuyChinhDto> Quizzes, int TotalCount)> GetQuizSubmissionsByUserIdAsync(
             int userId, int pageNumber, int pageSize);
