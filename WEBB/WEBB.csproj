@@ -67,6 +67,9 @@
     <Reference Include="Microsoft.IdentityModel.Tokens, Version=8.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.IdentityModel.Tokens.8.14.0\lib\net472\Microsoft.IdentityModel.Tokens.dll</HintPath>
     </Reference>
+    <Reference Include="Nancy, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nancy.2.0.0\lib\net452\Nancy.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
@@ -281,6 +284,7 @@
     <Content Include="Scripts\quiz\wrong-answer.js" />
     <Content Include="Scripts\social\activity.js" />
     <Content Include="Scripts\social\leaderboard.js" />
+    <Content Include="Scripts\user\game-theme.css" />
     <Content Include="Scripts\user\login.js" />
     <Content Include="Scripts\user\profile.js" />
     <Content Include="Scripts\user\register.js" />

@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using WEBB.Models.Quiz;
 
 namespace WEBB.Controllers.Quiz
 {
@@ -11,7 +13,7 @@ namespace WEBB.Controllers.Quiz
         // GET: Quiz
         public ActionResult Index()
         {
-            return View();
+            return View(new List<CauHoiDto>());
         }
     }
 }

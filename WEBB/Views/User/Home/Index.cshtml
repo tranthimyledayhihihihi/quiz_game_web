@@ -1,7 +1,61 @@
-﻿
-@{
-    ViewBag.Title = "Index";
+﻿@{
+    ViewBag.Title = "Smash Quiz";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Index</h2>
+<!-- Logo Góc Trái -->
+<img src="https://cdn-icons-png.flaticon.com/512/5968/5968292.png" alt="Logo" class="top-left-logo" />
 
+<!-- Sidebar Trái -->
+<div class="left-sidebar">
+    <a href="#" class="feature-card card-gift">
+        <span>Quà Tặng</span>
+        <i class="fa-solid fa-gift"></i>
+    </a>
+    <a href="#" class="feature-card card-rank">
+        <span>Xếp Hạng</span>
+        <i class="fa-solid fa-trophy"></i>
+    </a>
+    <a href="#" class="feature-card card-stats">
+        <span>Thống Kê</span>
+        <i class="fa-solid fa-chart-simple"></i>
+    </a>
+    <a href="#" class="feature-card card-streak">
+        <span>Chuỗi Ngày</span>
+        <i class="fa-solid fa-fire"></i>
+    </a>
+    <a href="#" class="feature-card card-pvp">
+        <span>Đối Kháng</span>
+        <i class="fa-solid fa-swords"></i> <!-- Icon kiếm chéo -->
+    </a>
+    <a href="#" class="feature-card card-arena">
+        <span>Đấu Trường</span>
+        <i class="fa-solid fa-skull"></i>
+    </a>
+</div>
+
+<!-- Màn hình chính -->
+<div class="game-container">
+    <!-- Ảnh Xe Kart (Ảnh cũ) -->
+    <img src="https://cdn-icons-png.flaticon.com/512/3253/3253220.png" alt="Kart" class="center-illustration" />
+
+    <!-- Khu vực nút bấm (Đã căn chỉnh) -->
+    <div class="buttons-wrapper">
+        <!-- Nút PLAY -->
+        <a href="@Url.Action("Index", "Play", new { area = "Quiz" })" class="text-decoration-none w-100">
+            <button class="btn-play-big">
+                <i class="fa-solid fa-play me-3"></i> PLAY
+            </button>
+        </a>
+
+        <!-- 2 Nút Create và Join (Căn đều 2 bên) -->
+        <div class="sub-buttons">
+            <button class="btn-action-3d">
+                Create
+            </button>
+            <button class="btn-action-3d">
+                Join
+            </button>
+        </div>
+    </div>
+</div>
