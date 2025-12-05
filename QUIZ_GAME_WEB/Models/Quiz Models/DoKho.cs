@@ -1,0 +1,19 @@
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace QUIZ_GAME_WEB.Models.QuizModels
+{
+    public class DoKho
+    {
+        [Key]
+        public int DoKhoID { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string TenDoKho { get; set; } = null!;
+
+        public int DiemThuong { get; set; } = 0;
+
+        public virtual ICollection<CauHoi> CauHois { get; set; } = new HashSet<CauHoi>();
+    }
+}
